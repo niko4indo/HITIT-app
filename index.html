@@ -1,453 +1,93 @@
-# 极简 PWA 记账系统
-
-下面是完整可运行版本。
-
-部署后：
-
-* 手机可安装成 APP
-* 自动本地存储
-* 极简输入
-* 支持 Rp / ¥
-* 年底目标余额
-* 日均可花
-* PWA 离线运行
-
----
-
-# 1. index.html
-
-```html
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
-  <title>极简记账</title>
+const chart = document.getElementById('chart');
+chart.innerHTML = '';
 
-  <link rel="manifest" href="manifest.json">
+const monthly = [0,0,0,0,0,0];
 
-  <meta name="theme-color" content="#ffffff">
+records.forEach(r=>{
+if(r.type === 'expense'){
+const i = Math.floor(Math.random()*6);
+monthly[i] += r.amount;
+}
+});
 
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: Arial, sans-serif;
-    }
+const max = Math.max(...monthly,1);
 
-    body {
-      background: #fff;
-      color: #111;
-      max-width: 720px;
-      margin: auto;
-      padding: 18px;
-    }
+monthly.forEach(v=>{
+const bar = document.createElement('div');
+bar.className = 'bar';
+bar.style.height = ((v/max)*180+20)+'px';
+chart.appendChild(bar);
+});
+}
 
-    h1 {
-      font-size: 28px;
-      margin-bottom: 20px;
-    }
+function exportBackup(){
 
-    .card {
-      border: 1px solid #eee;
-      border-radius: 18px;
-      padding: 18px;
-      margin-bottom: 16px;
-    }
-
-    .input {
-      width: 100%;
-      border: none;
-      outline: none;
-      font-size: 42px;
-      text-align: center;
-      padding: 24px 0;
-    }
-
-    .buttons {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 10px;
-    }
-
-    button {
-      border: none;
-      border-radius: 16px;
-      padding: 18px;
-      font-size: 20px;
-      cursor: pointer;
-    }
-
-    .expense {
-      background: #111;
-      color: white;
-    }
-
-    .income {
-      background: #16a34a;
-      color: white;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .stat {
-      border: 1px solid #eee;
-      border-radius: 14px;
-      padding: 14px;
-    }
-
-    .stat p {
-      font-size: 13px;
-      color: #666;
-      margin-bottom: 6px;
-    }
-
-    .stat h2 {
-      font-size: 18px;
-    }
-
-    select,
-    input.small {
-      width: 100%;
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid #ddd;
-      margin-top: 12px;
-      font-size: 15px;
-    }
-
-    .record {
-      padding: 14px 0;
-      border-bottom: 1px solid #eee;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .record:last-child {
-      border-bottom: none;
-    }
-
-    .record small {
-      color: #666;
-    }
-
-    @media (max-width: 600px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-
-      .input {
-        font-size: 36px;
-      }
-    }
-  </style>
-</head>
-<body>
-
-  <h1>极简记账</h1>
-
-  <div class="card">
-
-    <input
-      id="amount"
-      class="input"
-      type="text"
-      inputmode="decimal"
-      placeholder="100 或 +200"
-      autofocus
-    >
-
-    <div class="buttons">
-      <button class="expense" onclick="saveExpense()">支出</button>
-      <button class="income" onclick="saveIncome()">收入</button>
-    </div>
-
-    <input id="target" class="small" type="number" placeholder="年底目标余额">
-
-    <input id="rate" class="small" type="number" placeholder="人民币汇率，例如 2200">
-
-    <select id="currency">
-      <option value="IDR">Rp 印尼盾</option>
-      <option value="CNY">¥ 人民币</option>
-    </select>
-
-  </div>
-
-  <div class="grid">
-
-    <div class="stat">
-      <p>当前余额</p>
-      <h2 id="balance">Rp 0</h2>
-    </div>
-
-    <div class="stat">
-      <p>日均可花</p>
-      <h2 id="daily">Rp 0</h2>
-    </div>
-
-  </div>
-
-  <div class="card" id="records"></div>
-
-<script>
-
-let records = JSON.parse(localStorage.getItem('records') || '[]');
-
-const amountInput = document.getElementById('amount');
-const targetInput = document.getElementById('target');
-const rateInput = document.getElementById('rate');
-const currencyInput = document.getElementById('currency');
-
-currencyInput.value = localStorage.getItem('currency') || 'IDR';
-rateInput.value = localStorage.getItem('rate') || 2200;
-targetInput.value = localStorage.getItem('target') || '';
-
-window.onload = () => {
-  setTimeout(() => {
-    amountInput.focus();
-  }, 300);
+const data = {
+records,
+currency:currency.value,
+rate:rate.value,
+target:target.value,
+targetDate:targetDate.value
 };
 
-function formatMoney(v) {
-
-  const currency = currencyInput.value;
-  const rate = Number(rateInput.value || 2200);
-
-  if (currency === 'CNY') {
-    return '¥ ' + (v / rate).toLocaleString('zh-CN', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-  }
-
-  return 'Rp ' + Number(v).toLocaleString('id-ID');
-}
-
-function saveSettings() {
-  localStorage.setItem('currency', currencyInput.value);
-  localStorage.setItem('rate', rateInput.value);
-  localStorage.setItem('target', targetInput.value);
-}
-
-function addRecord(type) {
-
-  let value = amountInput.value.trim();
-
-  if (!value) return;
-
-  if (value.startsWith('+')) {
-    value = value.replace('+', '');
-  }
-
-  const amount = parseFloat(value);
-
-  if (isNaN(amount)) return;
-
-  records.push({
-    amount,
-    type,
-    time: new Date().toLocaleString()
-  });
-
-  localStorage.setItem('records', JSON.stringify(records));
-
-  amountInput.value = '';
-
-  render();
-
-  amountInput.focus();
-}
-
-function saveExpense() {
-  addRecord('expense');
-}
-
-function saveIncome() {
-  addRecord('income');
-}
-
-function render() {
-
-  saveSettings();
-
-  let income = 0;
-  let expense = 0;
-
-  const el = document.getElementById('records');
-
-  el.innerHTML = '';
-
-  records.slice().reverse().forEach(r => {
-
-    if (r.type === 'income') {
-      income += r.amount;
-    } else {
-      expense += r.amount;
-    }
-
-    const div = document.createElement('div');
-
-    div.className = 'record';
-
-    div.innerHTML = `
-      <div>
-        <strong>${r.type === 'income' ? '收入' : '支出'}</strong>
-        <br>
-        <small>${r.time}</small>
-      </div>
-
-      <div>
-        ${r.type === 'income' ? '+' : '-'}${formatMoney(r.amount)}
-      </div>
-    `;
-
-    el.appendChild(div);
-  });
-
-  const balance = income - expense;
-
-  document.getElementById('balance').innerText = formatMoney(balance);
-
-  const target = Number(targetInput.value || 0);
-
-  const today = new Date();
-  const end = new Date(today.getFullYear(), 11, 31);
-
-  const remainDays = Math.max(1,
-    Math.ceil((end - today) / (1000 * 60 * 60 * 24))
-  );
-
-  const daily = (balance - target) / remainDays;
-
-  document.getElementById('daily').innerText = formatMoney(daily);
-}
-
-currencyInput.addEventListener('change', render);
-rateInput.addEventListener('input', render);
-targetInput.addEventListener('input', render);
-
-amountInput.addEventListener('keydown', e => {
-
-  if (e.key === 'Enter') {
-
-    if (amountInput.value.startsWith('+')) {
-      saveIncome();
-    } else {
-      saveExpense();
-    }
-  }
+const blob = new Blob([
+JSON.stringify(data,null,2)
+],{
+type:'application/json'
 });
+
+const a = document.createElement('a');
+
+a.href = URL.createObjectURL(blob);
+a.download = 'HITIT-backup.json';
+a.click();
+}
+
+function importBackup(){
+document.getElementById('backupFile').click();
+}
+
+document.getElementById('backupFile')
+.addEventListener('change',function(e){
+
+const file = e.target.files[0];
+if(!file)return;
+
+const reader = new FileReader();
+
+reader.onload = function(event){
+
+const data = JSON.parse(event.target.result);
+
+records = data.records || [];
+
+currency.value = data.currency || 'CNY';
+rate.value = data.rate || '2500';
+target.value = data.target || '';
+targetDate.value = data.targetDate || '2026-12-31';
+
+localStorage.setItem('records',JSON.stringify(records));
+
+render();
+};
+
+reader.readAsText(file);
+});
+
+currency.addEventListener('change',render);
+rate.addEventListener('input',render);
+target.addEventListener('input',render);
+targetDate.addEventListener('change',render);
 
 render();
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js');
+if('serviceWorker' in navigator){
+navigator.serviceWorker.register('./sw.js');
 }
 
 </script>
 
 </body>
 </html>
-```
-
----
-
-# 2. manifest.json
-
-```json
-{
-  "name": "极简记账",
-  "short_name": "记账",
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
-  "icons": [
-    {
-      "src": "icon.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    }
-  ]
-}
-```
-
----
-
-# 3. sw.js
-
-```javascript
-const CACHE = 'budget-v1';
-
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(cache => {
-      return cache.addAll([
-        './',
-        './index.html',
-        './manifest.json'
-      ]);
-    })
-  );
-});
-
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(res => {
-      return res || fetch(e.request);
-    })
-  );
-});
-```
-
----
-
-# 4. icon.png
-
-准备一个：
-
-* 192×192
-* 白底图标
-
-命名：
-
-```text
-icon.png
-```
-
----
-
-# 部署方法
-
-推荐：
-
-* GitHub Pages
-* Netlify
-* Vercel
-
-上传以上文件即可。
-
----
-
-# 手机安装
-
-安卓 Chrome：
-
-```text
-菜单
-→ 添加到主屏幕
-```
-
-之后：
-
-* 像 APP 一样打开
-* 本地自动保存
-* 不会出现书签失效
-* 可离线使用

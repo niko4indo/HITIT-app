@@ -1,8 +1,8 @@
-const CACHE = 'budget-v1';
+const CACHE_NAME = 'hitit-v2';
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(cache => {
+    caches.open(CACHE_NAME).then(cache => {
       return cache.addAll([
         './',
         './index.html',
