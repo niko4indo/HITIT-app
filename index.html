@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>HITIT</title>
+
+<link rel="manifest" href="manifest.json">
+
+<meta name="theme-color" content="#ffffff">
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+}
+
+body{
+background:#f7f7f7;
+padding:20px;
+color:#111;
+max-width:720px;
+margin:auto;
+}
+
+h1{
+font-size:36px;
+font-weight:700;
+margin-bottom:20px;
+}
+
+.card{
+background:white;
+border-radius:24px;
+padding:20px;
+margin-bottom:16px;
+}
+
+.input{
+width:100%;
+border:none;
+outline:none;
+background:#f5f5f5;
+border-radius:20px;
+padding:24px;
+font-size:42px;
+text-align:center;
+}
+
+.buttons{
+display:flex;
+gap:12px;
+margin-top:16px;
+}
+
+button{
+border:none;
+border-radius:18px;
+padding:18px;
+font-size:24px;
+font-weight:700;
+cursor:pointer;
+flex:1;
+}
+
+.minus{
+background:#111;
+color:white;
+}
+
+.plus{
+background:#16a34a;
+color:white;
+}
+
+.info{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:12px;
+margin-top:16px;
+}
+
+.info-box{
+background:#fafafa;
+padding:16px;
+border-radius:18px;
+}
+
+.label{
+font-size:12px;
+color:#888;
+margin-bottom:8px;
+}
+
+.value{
+font-size:22px;
+font-weight:700;
+}
+
+.record{
+display:flex;
+justify-content:space-between;
+padding:14px 0;
+border-bottom:1px solid #eee;
+}
+
+.record:last-child{
+border:none;
+}
+
+.record-title{
+font-weight:600;
+margin-bottom:4px;
+}
+
+.record-time{
+font-size:12px;
+color:#888;
+}
+
+.sheet{
+position:fixed;
+left:0;
+right:0;
+bottom:-100%;
+background:white;
+border-radius:24px 24px 0 0;
+padding:20px;
+transition:0.25s;
+max-width:720px;
+margin:auto;
+}
+
+.sheet.show{
+bottom:0;
+}
+
+.sheet-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:12px;
+margin-top:16px;
+}
+
+.sheet-btn{
+padding:16px;
+border:none;
+border-radius:16px;
+background:#f5f5f5;
+font-size:16px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>HITIT</h1>
+
+<div class="card">
+
+<div class="label">当前余额</div>
+<div class="value" id="balance">¥0.00</div>
+
+<div class="info">
+
+<div class="info-box">
+<div class="label">每日预算</div>
+<div class="value" id="dailyBudget">¥0.00</div>
+</div>
+
+<div class="info-box">
+<div class="label">目标存款</div>
+<div class="value" id="targetAmount">¥0.00</div>
+</div>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<input
+id="amountInput"
+class="input"
+placeholder="100"
+inputmode="decimal"
+>
+
+<div class="buttons">
+<button class="minus" onclick="openSheet('expense')">-</button>
+<button class="plus" onclick="openSheet('income')">+</button>
+</div>
+
+</div>
+
+<div class="card">
+
+<div class="label" style="margin-bottom:16px;">近期记录</div>
+
+<div id="records"></div>
+
+</div>
+
+<div id="sheet" class="sheet">
+
+<div class="label">选择项目</div>
+
+<div class="sheet-grid" id="sheetGrid"></div>
+
+</div>
+
+<script>
+
+let records = JSON.parse(
+localStorage.getItem('records') || '[]'
+);
+
+const categories = {
+
+expense:[
+'餐饮',
+'交通',
+'购物',
+'娱乐',
+'房租',
+'其他'
+],
+
+income:[
+'工资',
+'奖金',
+'副业',
+'退款',
+'转账',
+'其他'
+]
+
+};
+
+let currentType = 'expense';
+
+const amountInput =
+document.getElementById('amountInput');
+
+function formatMoney(v){
+
+return '¥' + Number(v).toLocaleString(
+'zh-CN',
+{
+minimumFractionDigits:2
+}
+);
+
+}
+
+function openSheet(type){
+
+const amount = amountInput.value.trim();
+
+if(!amount)return;
+
+currentType = type;
+
+const grid =
+document.getElementById('sheetGrid');
+
+grid.innerHTML = '';
+
+categories[type].forEach(item=>{
+
+const btn =
+document.createElement('button');
+
+btn.className = 'sheet-btn';
+
+btn.innerText = item;
+
+btn.onclick = ()=>{
+
+addRecord(item);
+
+};
+
+grid.appendChild(btn);
+
+});
+
+document
+.getElementById('sheet')
+.classList.add('show');
+
+}
+
+function addRecord(category){
+
+let amount =
+parseFloat(amountInput.value);
+
+if(isNaN(amount))return;
+
+if(category === '其他'){
+
+category =
+prompt('请输入备注')
+|| '其他';
+
+}
+
+records.push({
+
+amount,
+category,
+type:currentType,
+time:new Date().toLocaleString()
+
+});
+
+localStorage.setItem(
+'records',
+JSON.stringify(records)
+);
+
+amountInput.value = '';
+
+document
+.getElementById('sheet')
+.classList.remove('show');
+
+render();
+
+}
+
+function render(){
+
+let income = 0;
+let expense = 0;
+
+records.forEach(r=>{
+
+if(r.type === 'income'){
+
+income += r.amount;
+
+}else{
+
+expense += r.amount;
+
+}
+
+});
+
+const balance =
+income - expense;
+
+document
+.getElementById('balance')
+.innerText =
+formatMoney(balance);
+
+const daily =
+balance / 30;
+
+document
+.getElementById('dailyBudget')
+.innerText =
+formatMoney(daily);
+
+document
+.getElementById('targetAmount')
+.innerText =
+formatMoney(5000);
+
+const recordsEl =
+document.getElementById('records');
+
+recordsEl.innerHTML = '';
+
+records
+.slice()
+.reverse()
+.slice(0,10)
+.forEach(r=>{
+
+const div =
+document.createElement('div');
+
+div.className = 'record';
+
+div.innerHTML = `
+
+<div>
+<div class="record-title">
+${r.category}
+</div>
+
+<div class="record-time">
+${r.time}
+</div>
+</div>
+
+<div>
+${r.type === 'income' ? '+' : '-'}
+${formatMoney(r.amount)}
+</div>
+
+`;
+
+recordsEl.appendChild(div);
+
+});
+
+}
+
+render();
+
+if('serviceWorker' in navigator){
+
+navigator
+.serviceWorker
+.register('./sw.js');
+
+}
+
+</script>
+
+</body>
+</html>
