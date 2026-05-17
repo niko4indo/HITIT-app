@@ -1,0 +1,72 @@
+
+export default {
+
+async fetch(request, env) {
+
+const TOKEN=env.GITHUB_TOKEN;
+
+const OWNER='你的GitHub用户名';
+
+const REPO='hitit';
+
+const PATH='backup.json';
+
+if(request.method==='GET'){
+
+const res=await fetch(
+`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`,
+{
+headers:{
+Authorization:`Bearer ${TOKEN}`
+}
+}
+);
+
+const data=await res.json();
+
+return Response.json(
+JSON.parse(atob(data.content))
+);
+
+}
+
+if(request.method==='POST'){
+
+const body=await request.json();
+
+const old=await fetch(
+`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`,
+{
+headers:{
+Authorization:`Bearer ${TOKEN}`
+}
+}
+);
+
+const oldData=await old.json();
+
+await fetch(
+`https://api.github.com/repos/${OWNER}/${REPO}/contents/${PATH}`,
+{
+method:'PUT',
+headers:{
+Authorization:`Bearer ${TOKEN}`,
+'Content-Type':'application/json'
+},
+body:JSON.stringify({
+message:'update backup',
+content:btoa(JSON.stringify(body,null,2)),
+sha:oldData.sha
+})
+}
+);
+
+return new Response('ok');
+
+}
+
+return new Response('error');
+
+}
+
+}

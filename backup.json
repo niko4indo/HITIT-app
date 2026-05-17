@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HITIT</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="css/style.css">
+
+<meta name="theme-color" content="#111111">
+</head>
+<body>
+
+<div class="wrap">
+
+<h1>HITIT</h1>
+
+<div class="card">
+<div class="label">余额</div>
+<div class="value" id="balance">0</div>
+</div>
+
+<div class="card">
+<input id="input" placeholder="输入金额">
+
+<div class="actions">
+<button onclick="addIncome()">收入</button>
+<button onclick="addExpense()">支出</button>
+</div>
+</div>
+
+<div class="card">
+<button onclick="syncCloud()">同步到 GitHub</button>
+</div>
+
+<div id="records"></div>
+
+</div>
+
+<script src="js/app.js"></script>
+
+</body>
+</html>

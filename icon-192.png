@@ -1,0 +1,26 @@
+
+超简化部署步骤：
+
+1. 新建 GitHub 仓库：
+hitit
+
+2. 把整个文件夹直接拖进 GitHub
+
+3. Settings -> Pages
+开启：Deploy from branch
+
+4. 打开：
+https://你的用户名.github.io/hitit
+
+5. 注册 Cloudflare Worker
+https://workers.cloudflare.com
+
+6. 把 worker.js 粘进去
+
+7. 添加环境变量：
+GITHUB_TOKEN
+
+8. 在 js/app.js：
+替换 API 地址
+
+完成。
